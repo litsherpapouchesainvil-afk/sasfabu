@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Vendedores - Sasfabu</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-card {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        p {
+            color: #64748b;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.85rem;
+            width: 100%;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: #1e40af;
+        }
+
+        #error-msg {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-card">
+        <h1>Sasfabu</h1>
+        <p>Ingresa tus credenciales para vender</p>
+
+        <div id="error-msg">Credenciales incorrectas. Intenta de nuevo.</div>
+
+        <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="email" placeholder="vendedor@sistema.com">
+        </div>
+
+        <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+
+        <button onclick="iniciarSesion()">Entrar al Panel de Ventas</button>
+    </div>
+
+    <script>
+        const API_URL = "http://137.184.159";
+
+        async function iniciarSesion() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-msg');
+
+            errorDiv.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.exito) {
+                    // Guardamos el nombre y saldo del vendedor para mostrarlo en el panel
+                    localStorage.setItem('vendedor_nombre', data.nombre);
+                    localStorage.setItem('vendedor_email', email);
+                    window.location.href = "index.html";
+                } else {
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.innerText = "Error de conexión con el servidor.";
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+
+</html>

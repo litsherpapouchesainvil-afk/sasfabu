@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas - Sistema de Recargas Cloud</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Navegación */
+        nav {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-info {
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Tarjeta de Saldo */
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+        }
+
+        .balance-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .balance-amount {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+        }
+
+        /* Formulario de Recarga */
+        .card {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #475569;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .status-msg {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="logo">Sasfabu</div>
+        <div class="user-info" id="vendedor-nombre">Hola, Vendedor</div>
+    </nav>
+
+    <div class="container">
+        <!-- VISOR DE SALDO EN TIEMPO REAL -->
+        <div class="balance-card">
+            <div class="balance-label">Tu Saldo Virtual Disponible</div>
+            <div class="balance-amount" id="current-balance">$0.00</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Actualizado ahora</div>
+        </div>
+
+        <!-- MÓDULO DE RECARGA -->
+        <div class="card">
+            <h2>Nueva Recarga Internacional</h2>
+            <div id="msg" class="status-msg"></div>
+
+            <div class="form-group">
+                <label>País Destino</label>
+                <select id="country">
+                    <option value="HT">Haití 🇭🇹</option>
+                    <option value="CL">Chile 🇨🇱</option>
+                    <option value="MX">México 🇲🇽</option>
+                    <option value="VE">Venezuela 🇻🇪</option>
+                    <option value="CO">Colombia 🇨🇴</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Número de Celular</label>
+                <input type="tel" id="phone" placeholder="+56 9 XXXX XXXX">
+            </div>
+
+            <div class="form-group">
+                <label>Operador</label>
+                <select id="operator">
+                    <option value="natcom">Natcom</option>
+                    <option value="digicel">Digicel</option>
+                    <option value="entel">Entel</option>
+                    <option value="claro">Claro</option>
+                    <option value="wom">WOM</option>
+                </select>
+            </div>
+
+            // IP DE TU SERVIDOR CLOUD SASFABU
+            const API_URL = "http://137.184.159";
+
+            // Esta función se ejecuta apenas abre la página
+            window.onload = async function() {
+            const email = localStorage.getItem('vendedor_email');
+
+            if (!email) {
+            window.location.href = "login.html";
+            return;
+            }
+
+            document.getElementById('vendedor-nombre').innerText = `Hola, ${email}`;
+            actualizarSaldo(email);
+            };
+
+            async function actualizarSaldo(email) {
+            try {
+            const res = await fetch(`${API_URL}/saldo/${email}`);
+            const data = await res.json();
+            if (data.exito) {
+            document.getElementById('current-balance').innerText = `$${data.saldo.toFixed(2)}`;
+            }
+            } catch (err) {
+            console.error("Error al conectar con Sasfabu Cloud", err);
+            }
+            }
+
+            async function enviarRecarga() {
+            const msgDiv = document.getElementById('msg');
+            const email = localStorage.getItem('vendedor_email');
+            const phone = document.getElementById('phone').value;
+            const amount = document.getElementById('amount').value;
+
+            msgDiv.style.display = 'none';
+
+            if(!phone || !amount) {
+            msgDiv.innerText = "Por favor completa todos los datos";
+            msgDiv.className = "status-msg error";
+            msgDiv.style.display = 'block';
+            return;
+            }
+
+            try {
+            msgDiv.innerText = "Procesando recarga en Sasfabu Cloud...";
+            msgDiv.className = "status-msg success";
+            msgDiv.style.display = 'block';
+
+            const res = await fetch(`${API_URL}/admin/abonar-saldo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emailVendedor: email, montoAbono: -(amount) })
+            });
+
+            const data = await res.json();
+            if(data.exito) {
+            msgDiv.innerText = "¡Recarga Exitosa!";
+            actualizarSaldo(email);
+            }
+            } catch (err) {
+            msgDiv.innerText = "Error al procesar.";
+            msgDiv.className = "status-msg error";
+            }
+            }
+
+            </script>
+</body>
+
+</html>

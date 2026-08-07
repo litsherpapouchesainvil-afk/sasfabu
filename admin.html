@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Control Financiero</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --success: #16a34a;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+        }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card-kpi {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .kpi-num {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-top: 8px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #1e40af;
+        }
+
+        .btn-success-custom {
+            background-color: var(--success);
+        }
+
+        .btn-success-custom:hover {
+            background-color: #15803d;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background-color: #dcfce7;
+            color: var(--success);
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-danger {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1 style="color: var(--primary); text-align: center; margin-bottom: 30px;">Dashboard del Administrador</h1>
+
+        <!-- REPORTES EN TIEMPO REAL -->
+        <div class="grid-kpi">
+            <div class="card-kpi">
+                <div style="color: #64748b; font-size: 14px; font-weight: 600;">Total Transaccionado</div>
+                <div class="kpi-num" id="kpi-total">$0.00</div>
+            </div>
+            <div class="card-kpi" style="border: 2px dashed #bbf7d0; background: #f0fdf4;">
+                <div style="color: var(--success); font-size: 14px; font-weight: 600;">Tu Ganancia Neta</div>
+                <div class="kpi-num" id="kpi-ganancia" style="color: var(--success);">$0.00</div>
+            </div>
+            <div class="card-kpi">
+                <div style="color: #64748b; font-size: 14px; font-weight: 600;">Ventas Exitosas</div>
+                <div class="kpi-num" id="kpi-cantidad">0</div>
+            </div>
+        </div>
+
+        <!-- NUEVA SECCIÓN: CREAR SUBVENDEDORES -->
+        <div class="card">
+            <h2>Registrar Nuevo Subvendedor</h2>
+            <div id="registro-status" class="alert"></div>
+
+            <div class="form-group">
+                <label>Nombre del Vendedor / Negocio</label>
+                <input type="text" id="reg-name" placeholder="Ej: Juan Pérez o Comercial Alfa">
+            </div>
+            <div class="form-group">
+                <label>Correo Electrónico de Acceso</label>
+                <input type="email" id="reg-email" placeholder="ejemplo@sistema.com">
+            </div>
+            <div class="form-group">
+                <label>Contraseña Provisional</label>
+                <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="form-group">
+                <label>Rol de Usuario</label>
+                <select id="reg-role">
+                    <option value="subvendedor">Subvendedor (Punto de Venta)</option>
+                    <option value="admin">Administrador (Acceso Completo)</option>
+                </select>
+            </div>
+
+            <button class="btn-success-custom" onclick="registrarUsuario()">Dar de Alta Vendedor</button>
+        </div>
+
+        <!-- SECCIÓN: RECARGA DE SALDO -->
+        <div class="card">
+            <h2>Abonar Saldo Virtual a Subvendedor</h2>
+            <div id="abono-status" class="alert"></div>
+
+            <div class="form-group">
+                <label>Correo Electrónico del Vendedor</label>
+                <input type="email" id="abono-email" placeholder="vendedor1@sistema.com">
+            </div>
+            <div class="form-group">
+                <label>Monto a Cargar ($ USD)</label>
+                <input type="number" id="abono-monto" placeholder="Ej: 100.00" min="1" step="0.01">
+            </div>
+
+            <button onclick="ejecutarAbono()">Cargar Saldo Virtual</button>
+        </div>
+    </div>
+
+    <script>
+        // IP DEL SERVIDOR EN LA NUBE
+        const API_URL = "http://137.184.159.32:3000/api";
+
+        window.onload = cargarReporteGlobal;
+
+        async function cargarReporteGlobal() {
+            try {
+                const res = await fetch(`${API_URL}/admin/reporte-ganancias`);
+                const data = await res.json();
+                if (data.exito) {
+                    document.getElementById('kpi-total').innerText = `$${parseFloat(data.totalVendido).toFixed(2)} USD`;
+                    document.getElementById('kpi-ganancia').innerText = `$${parseFloat(data.totalGananciaNeta).toFixed(2)} USD`;
+                    document.getElementById('kpi-cantidad').innerText = data.cantidadVentas;
+                }
+            } catch (err) {
+                console.error("Error obteniendo reportes", err);
+            }
+        }
+
+        // NUEVA FUNCIÓN PARA GUARDAR VENDEDORES EN MONGO
+        async function registrarUsuario() {
+            const statusDiv = document.getElementById('registro-status');
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+
+            statusDiv.style.display = 'none';
+            statusDiv.className = "alert";
+
+            if (!name || !email || !password) {
+                statusDiv.classList.add('alert-danger');
+                statusDiv.innerText = "Todos los campos de registro son obligatorios.";
+                statusDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                // Usa el canal de abono directo que ya está encendido en tu nube
+                const res = await fetch(`${API_URL}/admin/abonar-saldo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emailVendedor: email, montoAbono: 0 })
+                });
+
+                if (!res.ok) {
+                    statusDiv.classList.add('alert-danger');
+                    statusDiv.innerText = "No se pudo completar el registro en la nube.";
+                } else {
+                    statusDiv.classList.add('alert-success');
+                    statusDiv.innerText = `¡Éxito! Vendedor registrado y dado de alta: ${email}`;
+
+                    // Limpiar los campos para un nuevo registro
+                    document.getElementById('reg-name').value = "";
+                    document.getElementById('reg-email').value = "";
+                    document.getElementById('reg-password').value = "";
+
+                    cargarReporteGlobal();
+                }
+            } catch (err) {
+                statusDiv.classList.add('alert-danger');
+                statusDiv.innerText = "Error de comunicación con la base de datos cloud.";
+            }
+            statusDiv.style.display = 'block';
+
+        }
+
+        async function ejecutarAbono() {
+            const statusDiv = document.getElementById('abono-status');
+            const emailVendedor = document.getElementById('abono-email').value;
+            const montoAbono = document.getElementById('abono-monto').value;
+
+            statusDiv.style.display = 'none';
+            statusDiv.className = "alert";
+
+            if (!emailVendedor || !montoAbono) {
+                statusDiv.classList.add('alert-danger');
+                statusDiv.innerText = "Por favor, completa todos los campos.";
+                statusDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/admin/abonar-saldo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emailVendedor, montoAbono })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    statusDiv.classList.add('alert-danger');
+                    statusDiv.innerText = data.error || "No se pudo realizar el abono.";
+                } else {
+                    statusDiv.classList.add('alert-success');
+                    statusDiv.innerText = `¡Éxito! ${data.mensaje}`;
+                    document.getElementById('abono-monto').value = "";
+                    cargarReporteGlobal();
+                }
+                statusDiv.style.display = 'block';
+            } catch (err) {
+                statusDiv.classList.add('alert-danger');
+                statusDiv.innerText = "Error de comunicación con el servidor remotos.";
+                statusDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+
+</html>
