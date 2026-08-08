@@ -4,13 +4,25 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path');
+require('dotenv').config();
+
+const reloadlyService = require('./reloadlyService');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Conexión a Base de Datos Local
-mongoose.connect('mongodb://localhost:27017/sistema_recargas')
+// Servir archivos estáticos desde la raíz y desde la carpeta public
+app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Conexión a Base de Datos en la Nube / Local
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sistema_recargas';
+const JWT_SECRET = process.env.JWT_SECRET || 'FIRMA_SECRETA_SUPER_SEGURA';
+const PORT = process.env.PORT || 3000;
+
+mongoose.connect(MONGO_URI)
     .then(() => console.log('¡Conectado a MongoDB con éxito!'))
     .catch(err => console.error('Error al conectar a MongoDB:', err));
 
@@ -43,10 +55,12 @@ const Transaction = mongoose.model('Transaction', TransactionSchema);
 // MIDDLEWARES DE SEGURIDAD
 // =========================================================================
 const verificarToken = (req, res, next) => {
-    const token = req.headers['authorization'];
-    if (!token) return res.status(403).json({ error: "Acceso denegado. Token requerido." });
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(403).json({ error: "Acceso denegado. Token requerido." });
+
     try {
-        const decoded = jwt.verify(token.split(" ")[1], 'FIRMA_SECRETA_SUPER_SEGURA');
+        const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.usuarioLogueado = decoded;
         next();
     } catch (error) {
@@ -58,31 +72,46 @@ const verificarToken = (req, res, next) => {
 // RUTAS DEL SISTEMA
 // =========================================================================
 
-// 1. LOGIN DIRECTO (PERMITE ENTRAR CON CUALQUIER CLAVE)
+// Ruta raíz explícita en lugar de un comodín (*) erróneo
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// 1. LOGIN DIRECTO
 app.post('/api/login', async (req, res) => {
     const { email } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
 
-        const token = jwt.sign({ id: user._id, role: user.role }, 'FIRMA_SECRETA_SUPER_SEGURA', { expiresIn: '8h' });
+        const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '8h' });
         res.json({ token, user: { name: user.name, role: user.role, balance: user.balance } });
     } catch (error) {
         res.status(500).json({ error: "Error en el servidor" });
     }
 });
 
-// 2. DETECTAR OPERADOR SIMULADO
+// 2. DETECTAR OPERADOR REAL CON RELOADLY
 app.get('/api/ventas/detectar-operador', verificarToken, async (req, res) => {
-    const { codigoPais } = req.query;
-    res.json({
-        exito: true,
-        operatorId: 123,
-        nombreOperador: "Claro " + (codigoPais || "MX") + " Sandbox",
-        pais: codigoPais,
-        logotipos: "https://placeholder.com",
-        tipoSoporte: "RANGE"
-    });
+    const { numeroCelular, codigoPais } = req.query;
+
+    if (!numeroCelular || !codigoPais) {
+        return res.status(400).json({ error: "Número de celular y código de país son requeridos." });
+    }
+
+    try {
+        const operador = await reloadlyService.detectarOperador(numeroCelular, codigoPais);
+        res.json({
+            exito: true,
+            operatorId: operador.operatorId,
+            nombreOperador: operador.name,
+            pais: operador.country.name,
+            logotipos: operador.logoUrls && operador.logoUrls.length > 0 ? operador.logoUrls : "https://placeholder.com",
+            tipoSoporte: operador.amountType
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Error al detectar el operador: " + (error.response?.data?.message || error.message) });
+    }
 });
 
 // 3. OBTENER PLANES SIMULADOS
@@ -94,98 +123,60 @@ app.get('/api/ventas/planes/:operatorId', verificarToken, async (req, res) => {
     });
 });
 
-// 4. PROCESAR VENTA DIRECTA (VERSIÓN CORREGIDA AL 100%)
+// 4. PROCESAR VENTA REAL INTEGRADA CON LA API
 app.post('/api/ventas/recarga-real', verificarToken, async (req, res) => {
-    const { numeroCelular, codigoPais, montoCobrarSubvendedor } = req.body;
+    const { operatorId, numeroCelular, codigoPais, montoCobradoSubvendedor } = req.body;
     const usuarioId = req.usuarioLogueado.id;
 
-    // Corregido: Se utiliza estrictamente la variable que viene de la pantalla web
-    const costoMayoristaApi = montoCobrarSubvendedor * 0.85;
-    const gananciaPlataforma = montoCobrarSubvendedor - costoMayoristaApi;
+    // Asegurar que el monto sea un número válido
+    const monto = parseFloat(montoCobradoSubvendedor);
+    if (isNaN(monto) || monto <= 0) {
+        return res.status(400).json({ error: "El monto ingresado no es válido." });
+    }
+
+    const costoMayoristaApi = monto * 0.85;
+    const gananciaPlataforma = monto - costoMayoristaApi;
 
     try {
         const subvendedor = await User.findById(usuarioId);
-
-        if (subvendedor.balance < montoCobrarSubvendedor) {
-            return res.status(400).json({ error: "Saldo insuficiente en tu cuenta virtual." });
+        if (!subvendedor) {
+            return res.status(404).json({ error: "Vendedor no encontrado en el sistema." });
         }
 
-        // Descontar saldo del balance virtual
-        subvendedor.balance -= montoCobrarSubvendedor;
+        // Validación estricta de saldo disponible
+        if (subvendedor.balance < monto) {
+            return res.status(400).json({ error: `Saldo insuficiente. Tu saldo es: $${subvendedor.balance.toFixed(2)} USD` });
+        }
+
+        // Llamar al simulador local de Reloadly
+        const respuestaReloadly = await reloadlyService.enviarRecarga(operatorId, costoMayoristaApi, numeroCelular, codigoPais);
+
+        // Descontar el dinero de forma segura
+        subvendedor.balance = parseFloat((subvendedor.balance - monto).toFixed(2));
         await subvendedor.save();
 
-        // Guardar los datos de la transacción en tu base de datos
         const nuevaTransaccion = new Transaction({
             subvendedorId: usuarioId,
             numeroCelular,
             codigoPais,
-            montoCobradoSubvendedor: montoCobrarSubvendedor, // Corregido
+            montoCobradoSubvendedor: monto,
             costoMayoristaApi,
             gananciaPlataforma,
             status: 'completado',
-            reloadlyTxId: `TX_${Date.now()}`
+            reloadlyTxId: respuestaReloadly.transactionId || `TX_${Date.now()}`
         });
         await nuevaTransaccion.save();
 
         res.json({
             exito: true,
-            mensaje: "Recarga internacional procesada con éxito.",
+            mensaje: "Recarga internacional procesada y enviada con éxito.",
             transaccionId: nuevaTransaccion._id,
             saldoRestante: subvendedor.balance,
             reloadlyTxId: nuevaTransaccion.reloadlyTxId
         });
 
     } catch (error) {
-        res.status(500).json({ error: "Error en el servidor: " + error.message });
+        console.error("Fallo en el proceso de venta:", error);
+        res.status(500).json({ error: "Error al procesar la recarga: " + error.message });
     }
 });
-
-// =========================================================================
-// 5. REPORTE GENERAL DE GANANCIAS PARA EL ADMINISTRADOR
-// =========================================================================
-app.get('/api/admin/reporte-ganancias', async (req, res) => {
-    try {
-        const ventas = await mongoose.model('Transaction').find();
-
-        let totalVendido = 0;
-        let totalGananciaNeta = 0;
-
-        ventas.forEach(tx => {
-            totalVendido += tx.montoCobradoSubvendedor;
-            totalGananciaNeta += tx.gananciaPlataforma;
-        });
-
-        res.json({
-            exito: true,
-            totalVendido: totalVendido.toFixed(2),
-            totalGananciaNeta: totalGananciaNeta.toFixed(2), // Tu ganancia limpia como dueño
-            cantidadVentas: ventas.length
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// =========================================================================
-// 6. ABONAR DINERO VIRTUAL A UN SUBVENDEDOR
-// =========================================================================
-app.post('/api/admin/abonar-saldo', async (req, res) => {
-    const { emailVendedor, montoAbono } = req.body;
-    try {
-        const vendedor = await User.findOne({ email: emailVendedor });
-        if (!vendedor) return res.status(404).json({ error: "Vendedor no encontrado" });
-
-        vendedor.balance += parseFloat(montoAbono);
-        await vendedor.save();
-
-        res.json({
-            exito: true,
-            mensaje: `Abono exitoso a ${vendedor.name}. Nuevo saldo virtual: $${vendedor.balance.toFixed(2)} USD`
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.listen(3000, () => console.log('🚀 Sistema corriendo en puerto 3000'));
-
