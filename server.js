@@ -22,9 +22,13 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sistema_
 const JWT_SECRET = process.env.JWT_SECRET || 'FIRMA_SECRETA_SUPER_SEGURA';
 const PORT = process.env.PORT || 3000;
 
+// NUEVA CONEXIÓN INTELIGENTE CONTRA ERRORES:
 mongoose.connect(MONGO_URI)
     .then(() => console.log('¡Conectado a MongoDB con éxito!'))
-    .catch(err => console.error('Error al conectar a MongoDB:', err));
+    .catch(err => {
+        console.error('⚠️ Aviso de Base de Datos offline, continuando en modo simulación:', err.message);
+        // Esto evita que Render apague el servidor ante fallas de red
+    });
 
 // =========================================================================
 // MODELOS DE BASE DE DATOS
