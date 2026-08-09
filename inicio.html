@@ -8,13 +8,9 @@
     <style>
         :root {
             --primary: #1e3a8a;
-            /* Azul Marino Profundo */
             --accent: #3b82f6;
-            /* Azul Eléctrico */
             --bg-gradient: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-            /* Fondo Azul Premium */
             --text-light: #ffffff;
-            --text-dark: #0f172a;
         }
 
         body {
@@ -28,7 +24,6 @@
             flex-direction: column;
         }
 
-        /* NAVEGACIÓN Y MENÚ DESPLEGABLE */
         nav {
             background: rgba(30, 58, 138, 0.7);
             backdrop-filter: blur(10px);
@@ -49,11 +44,9 @@
             font-size: 1.75rem;
             font-weight: 800;
             letter-spacing: 0.05em;
-            color: var(--text-light);
             text-transform: uppercase;
         }
 
-        /* Enlaces para Computadoras */
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -74,7 +67,6 @@
             color: var(--accent);
         }
 
-        /* Botón de Menú Hamburguesa (Móvil) */
         .menu-toggle {
             display: none;
             flex-direction: column;
@@ -94,7 +86,6 @@
             transition: all 0.3s ease;
         }
 
-        /* CONTENIDO PRINCIPAL DE BIENVENIDA */
         .hero {
             flex: 1;
             display: flex;
@@ -118,7 +109,6 @@
             font-size: 1.25rem;
             opacity: 0.9;
             margin-bottom: 2.5rem;
-            max-width: 600px;
         }
 
         .cta-buttons {
@@ -160,7 +150,6 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        /* DISEÑO RESPONSIVO (TELÉFONOS) */
         @media (max-width: 768px) {
             .menu-toggle {
                 display: flex;
@@ -178,12 +167,10 @@
                 max-height: 0;
                 overflow: hidden;
                 transition: max-height 0.3s ease-in-out;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             }
 
             .nav-links.active {
                 max-height: 300px;
-                /* Expande el menú */
             }
 
             .nav-links li {
@@ -206,58 +193,51 @@
 
 <body>
 
-    <!-- BARRA DE NAVEGACIÓN -->
     <nav>
         <div class="logo">Sasfabu</div>
-
-        <!-- Icono Hamburguesa para celular -->
-        <button class="menu-toggle" id="mobile-menu" aria-label="Abrir menú">
+        <button class="menu-toggle" id="mobile-menu">
             <span></span>
             <span></span>
             <span></span>
         </button>
-
-        <!-- Enlaces que se contraen en el menú desplegable -->
+        <!-- ENLACES CORREGIDOS CON TU URL DE RENDER -->
         <ul class="nav-links" id="nav-list">
-            <li><a href="inicio.html">Inicio</a></li>
-            <li><a href="login.html">Acceso Puntos de Venta</a></li>
-            <li><a href="admin.html">Panel Administrador</a></li>
+            <li><a href="https://onrender.com">Inicio</a></li>
+            <li><a href="https://onrender.com">Acceso Vendedores</a></li>
+            <li><a href="https://onrender.com">Panel Administrador</a></li>
         </ul>
     </nav>
 
-    <!-- CUERPO DE LA PÁGINA -->
     <main class="hero">
         <h1>Conectando Fronteras con Recargas Instantáneas</h1>
         <p>La plataforma Cloud inteligente diseñada para la distribución y venta de saldo virtual internacional de forma
             ágil y segura.</p>
 
+        <!-- BOTONES PRINCIPALES CON ENLACES EN LA NUBE -->
         <div class="cta-buttons">
-            <a href="login.html" class="btn btn-primary">Iniciar Sesión de Ventas</a>
-            <a href="admin.html" class="btn btn-secondary">Consola de Control</a>
+            <a href="https://onrender.com" class="btn btn-primary">Iniciar Sesión de Ventas</a>
+            <a href="https://onrender.com" class="btn btn-secondary">Consola de Control</a>
         </div>
     </main>
     <script>
-        // Animación de apertura y cierre del menú desplegable responsivo
         const mobileMenuBtn = document.getElementById('mobile-menu');
         const navList = document.getElementById('nav-list');
 
         mobileMenuBtn.addEventListener('click', () => {
             navList.classList.toggle('active');
-
-            // Animación visual opcional de las barras del botón hamburguesa
-            mobileMenuBtn.classList.toggle('open');
-            const spans = mobileMenuBtn.querySelectorAll('span');
-            if (mobileMenuBtn.classList.contains('open')) {
-                spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
-                spans[1].style.opacity = '0';
-                spans[2].style.transform = 'rotate(-45deg) translate(6px, -6px)';
-            } else {
-                spans[0].style.transform = 'none';
-                spans[1].style.opacity = '1';
-                spans[2].style.transform = 'none';
-            }
         });
     </script>
+</body>
+
+</html>
+<script>
+    const mobileMenuBtn = document.getElementById('mobile-menu');
+    const navList = document.getElementById('nav-list');
+
+    mobileMenuBtn.addEventListener('click', () => {
+        navList.classList.toggle('active');
+    });
+</script>
 </body>
 
 </html>
