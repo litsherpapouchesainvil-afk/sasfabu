@@ -53,7 +53,7 @@ const reloadlyService = {
 // MIDDLEWARE DE VERIFICACIÓN DE SEGURIDAD
 function verificarToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(' ');
 
     if (!token || token === 'TOKEN_LOCAL_DE_PRUEBA') {
         req.usuarioLogueado = { id: 'mock_id_123', role: 'subvendedor' };
@@ -69,6 +69,11 @@ function verificarToken(req, res, next) {
         next();
     });
 }
+
+// CORRECCIÓN: RUTA RAÍZ PARA ESTABLECER INICIO.HTML COMO PORTADA PRINCIPAL
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/inicio.html');
+});
 
 // 1. RUTA DE INICIO DE SESIÓN (LOGIN)
 app.post('/api/login', async (req, res) => {
