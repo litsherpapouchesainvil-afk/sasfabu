@@ -22,9 +22,7 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sistema_
 const JWT_SECRET = process.env.JWT_SECRET || 'FIRMA_SECRETA_SUPER_SEGURA';
 const PORT = process.env.PORT || 3000;
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('¡Conectado a MongoDB con éxito!'))
-    .catch(err => console.error('Error al conectar a MongoDB:', err));
+console.log('🚀 Modo Nube Activo: Servidor simulado listo para Render.');
 
 // =========================================================================
 // MODELOS DE BASE DE DATOS
